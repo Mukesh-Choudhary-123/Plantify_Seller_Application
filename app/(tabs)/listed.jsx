@@ -6,28 +6,37 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from "react-native";
 import React, { useState } from "react";
 import CustomBanner from "../components/CustomBanner";
 import CustomProductList from "../components/CustomProductList";
 import CustomHeader from "../components/CustomHeader";
 import CustomShape from "../components/CustomShape";
+import { useFonts, Philosopher_700Bold } from "@expo-google-fonts/philosopher";
 import {
-  useFonts,
-  Philosopher_400Regular,
-  Philosopher_700Bold,
-} from "@expo-google-fonts/philosopher";
-import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+  Feather,
+  FontAwesome,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { useGetProductsQuery } from "../../redux/api/productApi";
+import CustomButton from "../components/CustomButton";
+import plusIcon from "../../assets/images/plusIcon.png";
+import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import CustomLoader from "../components/CustomLoader";
 
 const ListedScreen = () => {
+  const navigation = useNavigation();
   let [fontsLoaded] = useFonts({
-    Philosopher_400Regular,
     Philosopher_700Bold,
   });
 
-  const { data, isLoading, isError } = useGetProductsQuery();
+  const sellerId = useSelector((state) => state.auth.sellerId);
+  // console.log("seller-ID", sellerId);
 
+  // Get products and refetch function from RTK Query
+  const { data, isLoading, isError, refetch } = useGetProductsQuery(sellerId);
   console.log("Product:- ", data?.products);
 
   const options = [
@@ -43,16 +52,31 @@ const ListedScreen = () => {
   const [search, setSearch] = useState("");
   const [selectedOption, setSelectedOption] = useState("Top Pick");
 
+  // State to control the pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const handleAdd = () => {
+    navigation.navigate("ProductOperation", {
+      work: "add",
+    });
+  };
+
   return (
     <View style={styles.container}>
-      {/* <CustomHeader color="#66C6A3" /> */}
+      {/* {isLoading && <CustomLoader />} */}
       <CustomHeader />
       <ScrollView
         nestedScrollEnabled={true}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        {/* <CustomBanner /> */}
-
         {/* Search Bar with Icon */}
         <View style={{ flexDirection: "row" }}>
           <View style={styles.searchContainer}>
@@ -88,14 +112,14 @@ const ListedScreen = () => {
               key={key}
               style={[
                 styles.filterButton,
-                selectedOption === option && styles.activeFilterButton, // Apply active style if selected
+                selectedOption === option && styles.activeFilterButton,
               ]}
-              onPress={() => setSelectedOption(option)} // Update state on press
+              onPress={() => setSelectedOption(option)}
             >
               <Text
                 style={[
                   styles.filterText,
-                  selectedOption === option && styles.activeFilterText, // Change text color if selected
+                  selectedOption === option && styles.activeFilterText,
                 ]}
               >
                 {option}
@@ -103,11 +127,33 @@ const ListedScreen = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
-
-        <View style={{ paddingBottom: 10 }}>
-          <CustomProductList />
+        <View style={{ marginBottom: 10 }}>
+          {isLoading ? (
+            <View style={{marginTop:"50%"}}>
+              <CustomLoader color="black" />  
+            </View>
+          ) : (
+            <>
+              {data?.products && data.products.length > 0 ? (
+                <CustomProductList data={data.products} />
+              ) : (
+                <Text style={{ textAlign: "center", marginTop: "50%" }}>
+                
+                  No Listed Product
+                </Text>
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
+      <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
+        <Feather
+          name="plus"
+          size={40}
+          color={"white"}
+          style={{ alignSelf: "center" }}
+        />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -166,6 +212,19 @@ const styles = StyleSheet.create({
     color: "#002140",
   },
   activeFilterText: {
-    color: "white", // Active text color
+    color: "white",
+  },
+  addButton: {
+    height: 60,
+    width: 60,
+    backgroundColor: "#0D986A",
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    marginRight: 10,
+    marginBottom: 10,
+    elevation: 5,
+    borderRadius: 16,
+    justifyContent: "center",
   },
 });

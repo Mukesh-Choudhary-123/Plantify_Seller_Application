@@ -13,22 +13,22 @@ import {
   Philosopher_700Bold_Italic,
 } from "@expo-google-fonts/philosopher";
 import { useLoginMutation } from "@/redux/api/authApi";
-import { setCredentials } from "@/redux/slices/authSlice";
+import { setCredentials } from "../../redux/slices/authSlice";
 import { useDispatch } from "react-redux";
+import NotApproved from "../screens/NotApproved";
 
 const LoginScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("seller123@gmail.com");
+  const [password, setPassword] = useState("Qwert@123");
   const [errorMsg, setErrorMsg] = useState("");
 
   // Destructure the login function and mutation status from the hook
   const [login, { isLoading }] = useLoginMutation();
 
   const handleSubmit = async () => {
-    navigation.reset({ index: 0, routes: [{ name: "tabs" }] });
     // Basic validation
     if (!email || !password) {
       setErrorMsg("Please fill in both fields.");
@@ -39,13 +39,23 @@ const LoginScreen = () => {
       const userData = await login({ email, password }).unwrap();
       console.log("User:", userData);
       // Clear the fields on success
-      setEmail("");
-      setPassword("");
+      console.log("isApproved:- ", userData?.isApproved);
+      // setEmail("");
+      // setPassword("");
       setErrorMsg("");
-      dispatch(setCredentials({ user: userData.user, token: userData.token }));
-      navigation.reset({ index: 0, routes: [{ name: "tabs" }] });
+      dispatch(
+        setCredentials({
+          sellerId: userData.sellerId,
+          token: userData.token,
+          isApproved: userData.isApproved,
+        })
+      );
+      if (userData?.isApproved) {
+        navigation.reset({ index: 0, routes: [{ name: "tabs" }] });
+      } else {
+        navigation.navigate(NotApproved);
+      }
     } catch (err) {
-      navigation.reset({ index: 0, routes: [{ name: "tabs" }] });
       console.error("Login error:", err);
       setErrorMsg("Login failed. Please check your credentials.");
     }

@@ -174,7 +174,7 @@ const ProfileScreen = () => {
           </View>
         </View>
       </View>
-      <View style={styles.contentContainer}>
+      {/* <View style={styles.contentContainer}>
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id.toString()}
@@ -188,7 +188,7 @@ const ProfileScreen = () => {
           }
           ListHeaderComponent={ <Text style={styles.sectionTitle}>Order History</Text>}
         />
-      </View>
+      </View> */}
     </View>
   );
 };

@@ -14,7 +14,7 @@ const CustomHeader = ({color="white"}) => {
         source={require("@/assets/images/favicon.png")}
         style={styles.logo}
         />
-      <Text style={styles.logoText}>PLANTIFY</Text>
+      <Text style={styles.logoText}>PLANTIFY SELLER</Text>
         </View>
     </View>
   );

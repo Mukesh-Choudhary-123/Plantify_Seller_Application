@@ -6,6 +6,8 @@ import {
   FlatList,
   Pressable,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import React from "react";
 import CustomText from "./CustomText";
@@ -13,6 +15,9 @@ import { useFonts, Philosopher_700Bold } from "@expo-google-fonts/philosopher";
 import { useNavigation } from "@react-navigation/native";
 import CustomButton from "./CustomButton";
 import { AntDesign } from "@expo/vector-icons";
+import { useDeleteProductMutation } from "../../redux/api/productApi";
+import { useSelector } from "react-redux";
+import CustomLoader from "./CustomLoader";
 
 const colors = [
   "#9CE5CB",
@@ -38,136 +43,147 @@ const ProductCard = ({
     Philosopher_700Bold,
   });
 
+  const sellerId = useSelector((state) => state.auth.sellerId);
+  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
+
+  // console.log("seller-ID", sellerId);
+  const handlePress = () => {
+    navigation.navigate("ProductDetails", {
+      productId: id,
+      cardColor: bgColor,
+    });
+  };
+
   const handleEdit = () => {
     navigation.navigate("ProductOperation", {
       productId: id,
       cardColor: bgColor,
-      work:"edit"
+      work: "edit",
     });
   };
 
-  return (
-    // <TouchableOpacity onPress={handlePress}>
-    <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <Image
-        source={require("@/assets/images/Vector.png")}
-        style={styles.vector}
-      />
-      <Image
-        source={require("@/assets/images/Vector2.png")}
-        style={styles.vector2}
-      />
-
-      {/* LEFT */}
-      <View>
-        <View style={{ flexDirection: "row", gap: 20 }}>
-          <CustomText text={subtitle} style={styles.subtitle} />
-          <Image
-            source={require("@/assets/images/tagIcon.png")}
-            style={styles.tagIcon}
-          />
-        </View>
-        <CustomText text={title} style={styles.title} />
-        <Text style={styles.stock}>
-          <Text style={{ color: "grey", fontWeight: "500" }}>stock left :</Text>{" "}
-          {stock}
-        </Text>
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              top: 20,
-            }}
-            onPress={handleEdit}
-          >
-            {/* <Text style={{ fontWeight: "600", fontSize: 20 }}>Edit</Text> */}
-            <AntDesign name="edit" color={"#002140"} size={30} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              top: 20,
-            }}
-          >
-            {/* <Text style={{ fontWeight: "400", fontSize: 18 }}>Delete</Text> */}
-            <AntDesign name="delete" size={30} color={"red"} />
-          </TouchableOpacity>
-        </View>
-      </View>
-      {/* RIGHT */}
-      <View>
-        <Image source={{ uri: image }} style={styles.image} />
-      </View>
-    </View>
-    //  </TouchableOpacity>
-  );
-};
-
-const ProductList = () => {
-  const products = [
-    {
-      id: 1,
-      title: "Spider Plant",
-      prices: 220,
-      subtitle: "Air Purifier",
-      stock: 13,
-      image:
-        "https://res.cloudinary.com/dyws4bybf/image/upload/c_thumb,w_200,g_face/v1740810278/zcwyruubsttbphlcfwhr.png",
-    },
-    {
-      id: 2,
-      title: "Money Plant",
-      prices: 180,
-      subtitle: "Indoor Plant",
-      stock: 8,
-      image:
-        "https://res.cloudinary.com/dyws4bybf/image/upload/c_thumb,w_200,g_face/v1740810278/y5ne7fz3zcucplxjjblu.png",
-    },
-    {
-      id: 3,
-      title: "Jade Plant",
-      prices: 270,
-      subtitle: "Succulent",
-      stock: 3,
-      image:
-        "https://res.cloudinary.com/dyws4bybf/image/upload/c_thumb,w_200,g_face/v1740810279/c1fuea1c20gw3p7z5jir.png",
-    },
-    // ... add other products as needed
-  ];
-
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <Text style={styles.headerTitle}>Popular Plants</Text>
-      <Text style={styles.headerSubtitle}>Bring nature into your space</Text>
-    </View>
-  );
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Confirmation", // title
+      "Are you sure you want to delete this item?", // message
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            console.log("Deleting product with id:", id);
+            deleteProduct({ id, sellerId })
+              .unwrap()
+              .then((res) => {
+                console.log("Product deleted successfully:", res);
+              })
+              .catch((err) => {
+                console.error("Failed to delete product:", err);
+              });
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
-    <FlatList
-      data={products}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item, index }) => (
-        <ProductCard
-          id={item.id}
-          title={item.title}
-          subtitle={item.subtitle}
-          stock={item.stock}
-          image={item.image}
-          bgColor={colors[index % colors.length]}
+    <TouchableOpacity onPress={handlePress}>
+      <View style={[styles.container, { backgroundColor: bgColor }]}>
+        <Image
+          source={require("@/assets/images/Vector.png")}
+          style={styles.vector}
         />
-      )}
-      showsVerticalScrollIndicator={false}
-      scrollEnabled={false}
-    />
+        <Image
+          source={require("@/assets/images/Vector2.png")}
+          style={styles.vector2}
+        />
+
+        {/* LEFT */}
+        <View>
+          <View style={{ flexDirection: "row", gap: 20 }}>
+            <CustomText text={subtitle} style={styles.subtitle} />
+            <Image
+              source={require("@/assets/images/tagIcon.png")}
+              style={styles.tagIcon}
+            />
+          </View>
+          <CustomText text={title} style={styles.title} />
+          <Text style={styles.stock}>
+            <Text style={{ color: "grey", fontWeight: "500" }}>
+              stock left :
+            </Text>{" "}
+            {stock}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                top: 20,
+              }}
+              onPress={handleEdit}
+            >
+              {/* <Text style={{ fontWeight: "600", fontSize: 20 }}>Edit</Text> */}
+              <AntDesign name="edit" color={"#002140"} size={30} />
+            </TouchableOpacity>
+
+            {!isDeleting ? (
+              <TouchableOpacity
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  top: 20,
+                }}
+                onPress={handleDelete}
+              >
+                {/* <Text style={{ fontWeight: "400", fontSize: 18 }}>Delete</Text> */}
+                <AntDesign name="delete" size={30} color={"red"} />
+              </TouchableOpacity>
+            ) : (
+              // null
+              <ActivityIndicator
+                style={{ top: 20 }}
+                size={"large"}
+                color={"red"}
+              />
+            )}
+          </View>
+        </View>
+        {/* RIGHT */}
+        <View>
+          <Image source={{ uri: image }} style={styles.image} />
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
-export default ProductList;
+const ProductList = ({ data }) => {
+  return (
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item._id.toString()}
+        renderItem={({ item, index }) => (
+          <ProductCard
+            id={item._id}
+            title={item.title}
+            subtitle={item.subtitle}
+            stock={item.stock}
+            image={item.thumbnail}
+            bgColor={colors[index % colors.length]}
+          />
+        )}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+      />
+  );
+};
+
+export default ProductCard;
 
 const styles = StyleSheet.create({
   headerText: {

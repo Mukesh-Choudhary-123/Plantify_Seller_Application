@@ -16,8 +16,11 @@ const CustomBanner = () => {
     <View style={styles.container}>
       {/* Left Side - Text Section */}
       <View style={styles.textContainer}>
-        <Text style={styles.heading}>There's a Plant {"\n"}for Everyone</Text>
-        <Text style={styles.title}>Bring nature into your space</Text>
+        <Text style={styles.title}>Plant & Order Overview</Text>
+        <Text style={styles.heading}>Plants listed <Text style={{color:"#002140"}}>145</Text></Text>
+        <Text style={styles.heading}>Orders received <Text style={{color:"#002140"}}>45</Text></Text>
+        <Text style={styles.heading}>Orders Pending <Text style={{color:"#002140"}}>10</Text></Text>
+        <Text style={styles.heading}>Orders delivered <Text style={{color:"#002140"}}>35</Text></Text>
       </View>
 
       {/* Right Side - Image & Dots Section */}
@@ -53,14 +56,15 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    marginTop:-5
   },
   heading: {
-    fontSize: 24,
-    color: "#002140",
-    fontFamily: "Philosopher_700Bold",
+    fontSize: 17,
+    fontWeight: 600,
+    color: "grey",
   },
   title: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "500",
     color: "#0D986A",
     marginTop: 5,

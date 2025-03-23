@@ -15,6 +15,7 @@ import "../global.css";
 import { AppRegistry } from 'react-native';
 import { name as appName } from '../app.json';
 import ProductOperation from "./screens/ProductOperation";
+import NotApproved from "./screens/NotApproved";
 
 AppRegistry.registerComponent(appName, () => App);
 
@@ -40,6 +41,7 @@ const RootNavigator = () => {
       <Stack.Screen name="ProductDetails" component={ProductDetails} />
       <Stack.Screen name="ProductOperation" component={ProductOperation} />
       <Stack.Screen name="PlaceOrder" component={PlaceOrder} />
+      <Stack.Screen name="NotApproved" component={NotApproved}/>
       <Stack.Screen name="NotFound" component={NotFoundScreen} />
     </Stack.Navigator>
   );

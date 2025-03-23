@@ -7,9 +7,10 @@ import CustomModal from "./CustomModal";
 const CustomDropdown = ({
   label = "Label",
   error,
-  placeholder = "Enter text...",
+  placeholder = "Select Item...",
   value,
   style,
+  option,
   inputLabelText,
   selectedItem,
   handleSelect,
@@ -55,12 +56,14 @@ const CustomDropdown = ({
 
   const options = [
     // ...data.map((item) => ({ id: item, name: item })),
-    ...indiaStates.map((state) => ({ id: state, name: state })),
+    ...option.map((state) => ({ id: state, name: state })),
   ];
 
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedOption, setSelectedOption] = useState(selectedItem);
+
+
   useEffect(() => {
     setSelectedOption(selectedItem);
   }, [selectedItem]);
@@ -72,7 +75,7 @@ const CustomDropdown = ({
   const handleSelectOption = (item) => {
     setSelectedOption(item);
     handleSelect(item);
-    setModalVisible(false);
+    setIsVisible(false); // Hide the modal after selection
   };
 
   return (
@@ -95,7 +98,7 @@ const CustomDropdown = ({
           <View
             style={{ flexDirection: "row", justifyContent: "space-between" }}
           >
-            <CustomText text={placeholder} style={{ color: "grey" }} />
+            <CustomText text={selectedOption? selectedOption : placeholder} style={{ color: "grey" }} />
             <FontAwesome name="angle-down" size={25} color={"grey"} />
           </View>
         </TouchableOpacity>
@@ -178,7 +181,7 @@ const styles = StyleSheet.create({
   },
   modal: {
     width: "100%",
-    maxHeight: "60%",
+    maxHeight: "80%",
     minHeight: "30%",
     borderRadius: 10,
     padding: 20,

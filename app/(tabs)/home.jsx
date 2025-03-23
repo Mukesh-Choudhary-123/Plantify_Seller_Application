@@ -1,190 +1,382 @@
-import { Image, ScrollView, StyleSheet, View } from "react-native";
-import React from "react";
-import CustomHeader from "../components/CustomHeader";
 import {
-  useFonts,
-  Philosopher_400Regular,
-  Philosopher_700Bold,
-} from "@expo-google-fonts/philosopher";
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
 import CustomBanner from "../components/CustomBanner";
-import { Text } from "react-native";
+import CustomHeader from "../components/CustomHeader";
+import { useFonts, Philosopher_700Bold } from "@expo-google-fonts/philosopher";
+import { Feather, FontAwesome } from "@expo/vector-icons";
+import { useGetProductsQuery } from "../../redux/api/productApi";
+import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import CustomLoader from "../components/CustomLoader";
+import ProductCard from "../components/CustomProductList";
+import { colors } from "../../constant";
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
+  const sellerId = useSelector((state) => state.auth.sellerId);
+  const onEndReachedCalledDuringMomentum = useRef(true);
+
   let [fontsLoaded] = useFonts({
-    Philosopher_400Regular,
     Philosopher_700Bold,
   });
 
+  // Pagination and filter state
+  const [page, setPage] = useState(1);
+  const [products, setProducts] = useState([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [search, setSearch] = useState("");
+  const [selectedOption, setSelectedOption] = useState("");
+
+  const options = [
+    "Top Pick",
+    "Indoor",
+    "Outdoor",
+    "Fertilizer",
+    "Plants",
+    "Flowers",
+    "Herbs",
+    "Seeds",
+    "Fruits",
+    "Vegetables",
+  ];
+
+  const { data, isLoading, isError, refetch } = useGetProductsQuery({
+    sellerId,
+    page,
+    limit: 5,
+    search,
+    category: selectedOption,
+  });
+
+    // Reset pagination and products when filter or search changes
+  // In your useEffect for filter changes
+useEffect(() => {
+  // Cancel pending requests if filter changes
+  const abortController = new AbortController();
+  
+  setPage(1);
+  setProducts([]);
+  setHasMore(true);
+  
+  return () => abortController.abort();
+}, [search, selectedOption]);
+
+const handleClearFilter = () => {
+  setSearch("");
+  setSelectedOption("");
+  setPage(1);
+  setProducts([]);
+  setHasMore(true);
+  setIsFetching(true); // Force loading state
+};
+
+useEffect(() => {
+  if (data?.products) {
+    setProducts(prev => 
+      page === 1 ? data.products : [...prev, ...data.products]
+    );
+    setHasMore(page < data.totalPages);
+  }
+  setIsFetching(false);
+}, [data]);
+
+  console.log("Data :- ", data);
+  console.log("Number's of products  :- ", data?.products?.length);
+  console.log("Page :- ",page)
+
+  const loadMoreProducts = () => {
+    if (!isFetching && hasMore && !onEndReachedCalledDuringMomentum.current) {
+      setIsFetching(true);
+      setPage((prev) => prev + 1);
+      onEndReachedCalledDuringMomentum.current = true;
+    }
+  };
+
+
+  const renderHeader = () => (
+    <View>
+      {/* <CustomBanner /> */}
+      <View style={{ flexDirection: "row", marginHorizontal: 10 }}>
+        <View style={styles.searchContainer}>
+          <FontAwesome
+            name="search"
+            size={20}
+            color="#002140"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search Plant"
+            placeholderTextColor="#002140"
+            onChangeText={setSearch}
+            value={search}
+          />
+        </View>
+        <TouchableOpacity onPress={handleClearFilter}>
+          <Image
+            source={require("@/assets/images/filterIcon.png")}
+            style={styles.filterIcon}
+          />
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterContainer}
+      >
+        {options.map((option, key) => (
+          <TouchableOpacity
+            key={key}
+            style={[
+              styles.filterButton,
+              selectedOption === option && styles.activeFilterButton,
+            ]}
+            onPress={() => setSelectedOption(option)}
+          >
+            <Text
+              style={[
+                styles.filterText,
+                selectedOption === option && styles.activeFilterText,
+              ]}
+            >
+              {option}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <CustomHeader />
-      <ScrollView
-        nestedScrollEnabled={true}
-        showsVerticalScrollIndicator={false}
-      >
-        <CustomBanner />
-        <View style={{ flexDirection: "row", justifyContent: "space-evenly" }}>
-          <View
-            style={{
-              width: 170,
-              // backgroundColor: "#56D1A7",
-              backgroundColor: "#0D986A",
-              elevation: 4,
-              marginVertical: 20,
-              marginHorizontal: 10,
-              borderRadius: 12,
-              padding: 5,
-              overflow: "hidden",
-            }}
-          >
-            <Image
-              source={require("@/assets/images/Vector.png")}
-              style={styles.vector}
-            />
-            <Image
-              source={require("@/assets/images/Vector2.png")}
-              style={styles.vector2}
-            />
-            {/* Logo */}
-            <Image
-              source={require("../../assets/images/plantIcon.png")}
-              style={{ alignSelf: "center", marginTop: 10, marginBottom: 10 }}
-            />
-            {/* BottomHeader */}
-            <Text
-              style={{
-                // fontFamily: "Philosopher_700Bold",
-                fontWeight: "800",
-                fontSize: 25,
-                color: "#002140",
-                letterSpacing:2,
-                alignSelf: "center",
-              }}
-            >
-              Products
-            </Text>
-            {/* <Text
-              style={{
-                // fontFamily: "Philosopher_700Bold",
-                fontWeight:500,
-                fontSize: 20,
-                // color: "#002140",
-                color: "#fff",
-                alignSelf: "center",
-              }}
-            >
-              Listed
-            </Text> */}
-            {/* Number */}
-            <Text
-              style={{
-                fontSize: 24,
-                color: "white",
-                // color: "#002140",
-                fontWeight: 800,
-                alignSelf: "center",
-                // marginTop:4
-              }}
-            >
-              2,160
-            </Text>
-          </View>
+      {/* <CustomHeader /> */}
+      <CustomHeader color="#56D1A7"/>
 
-          <View
-            style={{
-              width: 170,
-              backgroundColor: "#0D986A",
-              elevation: 4,
-              marginVertical: 20,
-              marginHorizontal: 10,
-              borderRadius: 12,
-              padding: 5,
-              overflow: "hidden",
-            }}
-          >
-            <Image
-              source={require("@/assets/images/Vector.png")}
-              style={styles.vector}
-            />
-            <Image
-              source={require("@/assets/images/Vector2.png")}
-              style={styles.vector2}
-            />
-            {/* Logo */}
-            <Image
-              source={require("../../assets/images/ordersIcon.png")}
-              style={{ alignSelf: "center", marginTop: 10, marginBottom: 10 }}
-            />
-            {/* BottomHeader */}
-            <Text
-              style={{
-                // fontFamily: "Philosopher_700Bold",
-                fontWeight: "800",
-                letterSpacing:2,
-                fontSize: 25,
-                color: "#002140",
-                alignSelf: "center",
-              }}
-            >
-              Orders
-            </Text>
-            {/* <Text
-              style={{
-                // fontFamily: "Philosopher_700Bold",
-                fontWeight:500,
-                fontSize: 20,
-                color: "#002140",
-                alignSelf: "center",
-              }}
-            >
-              place
-            </Text> */}
-            {/* Number */}
-            <Text
-              style={{
-                fontSize: 24,
-                color: "white",
-                fontWeight: 800,
-                alignSelf: "center",
-                // marginTop:4
-              }}
-            >
-              185
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-      {/* 
-      Add Plant (Button)
-        Total Product listed
-        Total Orders (with status)
-         -pending
-         -shipping
-         -delivered
-         Total listed Product left
-      */}
+
+      <FlatList
+        data={products}
+        keyExtractor={(item) => item._id.toString()}
+        renderItem={({ item, index }) => (
+          <ProductCard
+            id={item._id}
+            title={item.title}
+            subtitle={item.subtitle}
+            stock={item.stock}
+            image={item.thumbnail}
+            bgColor={colors[index % colors.length]}
+          />
+        )}
+        ListHeaderComponent={renderHeader}
+        onMomentumScrollBegin={() => {
+          onEndReachedCalledDuringMomentum.current = false;
+        }}
+        onEndReached={loadMoreProducts}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={() => {
+          if (isFetching) {
+            return (
+              <View style={styles.footer}>
+                <ActivityIndicator size="small" color="#000" />
+                <Text style={styles.footerText}>loading more...</Text>
+              </View>
+            );
+          }
+          if (!hasMore && products.length > 0) {
+            return <Text style={styles.noMoreText}>No more products</Text>;
+          }
+          return null;
+        }}
+        // ListEmptyComponent={() => (
+        //   <View style={styles.emptyContainer}>
+        //     <Text style={styles.emptyText}>No products found</Text>
+        //   </View>
+        // )}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate("ProductOperation", { work: "add" })}
+        style={styles.addButton}
+      >
+        <Feather name="plus" size={40} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
-
-export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
   },
-  vector: {
-    position: "absolute",
-    height: 70,
-    width: "100%",
-    marginLeft: 3,
-    marginTop: 20,
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#002140",
+    borderRadius: 14,
+    marginHorizontal: 10,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    height: 55,
+    width: "80%",
   },
-  vector2: {
+  footer: {
+    flexDirection: "row",
+    alignSelf: "center",
+    justifyContent: "center",
+    padding: 10,
+  },
+  footerText: {
+    fontSize: 16,
+    marginLeft: 5,
+    color: "#002140",
+  },
+  noMoreText: {
+    textAlign: "center",
+    padding: 10,
+    color: "#666",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    height: 200,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+  },
+  filterIcon: {
+    marginTop: 10,
+    height: 55,
+    width: 50,
+  },
+  filterContainer: {
+    flexDirection: "row",
+    marginTop: 10,
+    marginHorizontal: 15,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#002140",
+    marginLeft: 7,
+  },
+  activeFilterButton: {
+    backgroundColor: "#0D986A",
+    borderColor: "#0D986A",
+  },
+  filterText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#002140",
+  },
+  activeFilterText: {
+    color: "white",
+  },
+  addButton: {
+    height: 60,
+    width: 60,
+    backgroundColor: "#0D986A",
     position: "absolute",
-    height: 90,
-    width: "100%",
-    marginTop: 5,
+    bottom: 0,
+    right: 0,
+    marginRight: 10,
+    marginBottom: 10,
+    elevation: 5,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
+
+export default HomeScreen;
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "white",
+//   },
+//   searchContainer: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     borderWidth: 1,
+//     borderColor: "#002140",
+//     borderRadius: 14,
+//     marginHorizontal: 10,
+//     marginTop: 10,
+//     paddingHorizontal: 10,
+//     height: 55,
+//     width: "80%",
+//   },
+//   searchIcon: {
+//     marginRight: 10,
+//   },
+//   searchInput: {
+//     flex: 1,
+//     fontSize: 16,
+//   },
+//   filterIcon: {
+//     marginTop: 10,
+//     height: 55,
+//     width: 50,
+//   },
+//   filterContainer: {
+//     flexDirection: "row",
+//     marginTop: 10,
+//     marginHorizontal: 15,
+//   },
+//   filterButton: {
+//     paddingVertical: 8,
+//     paddingHorizontal: 15,
+//     borderRadius: 20,
+//     borderWidth: 1,
+//     borderColor: "#002140",
+//     marginLeft: 7,
+//   },
+//   activeFilterButton: {
+//     backgroundColor: "#0D986A",
+//     borderColor: "#0D986A",
+//   },
+//   filterText: {
+//     fontSize: 16,
+//     fontWeight: "500",
+//     color: "#002140",
+//   },
+//   activeFilterText: {
+//     color: "white",
+//   },
+//   addButton: {
+//     height: 60,
+//     width: 60,
+//     backgroundColor: "#0D986A",
+//     position: "absolute",
+//     bottom: 0,
+//     right: 0,
+//     marginRight: 10,
+//     marginBottom: 10,
+//     elevation: 5,
+//     borderRadius: 16,
+//     justifyContent: "center",
+//   },
+// });
