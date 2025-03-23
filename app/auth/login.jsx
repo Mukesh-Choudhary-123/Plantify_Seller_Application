@@ -45,7 +45,9 @@ const LoginScreen = () => {
       setErrorMsg("");
       dispatch(
         setCredentials({
-          sellerId: userData.sellerId,
+          sellerId: userData.sellerData.sellerId,
+          username: userData.sellerData.sellername,
+          email:userData.sellerData.email,
           token: userData.token,
           isApproved: userData.isApproved,
         })

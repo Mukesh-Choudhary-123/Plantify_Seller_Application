@@ -9,18 +9,23 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import CustomHeader from "../components/CustomHeader";
 import { useFonts, Philosopher_700Bold } from "@expo-google-fonts/philosopher";
 import { useDispatch, useSelector } from "react-redux";
-import { useGetOrderQuery } from "../../redux/api/orderApi";
+import {
+  useGetOrderQuery,
+  useUpdateOrderMutation,
+} from "../../redux/api/orderApi";
 import LottieView from "lottie-react-native";
 import EmptyCart from "../../assets/animation/EmptyCart.json";
 import { useState } from "react";
-import { colors } from "../../constant";
+import { Entypo, FontAwesome, MaterialIcons } from "@expo/vector-icons";
 const { width, height } = Dimensions.get("window");
 
 const orderSteps = ["order", "shipped", "delivered"];
+
+const status = ["pending", "shipped", "delivered", "cancelled"];
 
 const options = [
   "Newest",
@@ -29,13 +34,32 @@ const options = [
   "Pending",
   "Cancelled",
   "Delivered",
-  "Processing",
-  "Shipping",
+  "Shipped",
 ];
+
+const getStatusBadgeColor = (status) => {
+  switch (status?.toLowerCase()) {
+    case "cancelled":
+      return "#ff4444"; // bright red
+    case "delivered":
+      return "#4caf50"; // bright green
+    case "shipped":
+      return "#2196f3"; // bright blue
+    case "pending":
+    default:
+      return "#ffeb3b"; // bright yellow
+  }
+};
 
 const OrderScreen = () => {
   const dispatch = useDispatch();
   const [selectedOption, setSelectedOption] = useState("");
+  const [page, setPage] = useState(1);
+  const [visibleOrderId, setVisibleOrderId] = useState(null);
+  const [ordersData, setOrdersData] = useState([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
   let [fontsLoaded] = useFonts({
     Philosopher_700Bold,
   });
@@ -47,13 +71,43 @@ const OrderScreen = () => {
     isLoading: isOrderLoading,
     isError: isOrderError,
     error: orderError,
-  } = useGetOrderQuery(sellerId, { skip: !sellerId });
-
-  // console.log("Orders: ", JSON.stringify(fetchOrder, null, 2));
-
-  // console.log("Orders: ", fetchOrder);
+  } = useGetOrderQuery(
+    { sellerId, page, limit: 5, filter: selectedOption },
+    { skip: !sellerId }
+  );
 
   const orders = fetchOrder?.orders || [];
+
+  const [updateOrder, { isLoading, isError, error }] = useUpdateOrderMutation();
+
+  // Reset orders if sellerId (or filter) changes
+  useEffect(() => {
+    setPage(1);
+    setOrdersData([]);
+    setHasMore(true);
+  }, [sellerId]);
+
+  // Merge new orders into state when fetchOrder updates
+  useEffect(() => {
+    if (fetchOrder && fetchOrder.orders) {
+      setOrdersData((prevOrders) =>
+        page === 1 ? fetchOrder.orders : [...prevOrders, ...fetchOrder.orders]
+      );
+      if (page >= fetchOrder.totalPages) {
+        setHasMore(false);
+      }
+    }
+    setIsFetching(false);
+  }, [fetchOrder, page]);
+
+  const onEndReachedCalledDuringMomentum = useRef(true);
+
+  const loadMoreOrders = () => {
+    if (!isFetching && hasMore) {
+      setIsFetching(true);
+      setPage((prevPage) => prevPage + 1);
+    }
+  };
 
   //#region order Item
   const renderOrderItem = ({ item, index }) => {
@@ -68,16 +122,6 @@ const OrderScreen = () => {
       "#F5EDA8",
     ];
 
-    // Configuration for status badges
-    const statusConfig = {
-      order: { color: "#FFB800", label: "Pending" },
-      shipped: { color: "#0D986A", label: "Shipped" },
-      delivered: { color: "#2E7D32", label: "Delivered" },
-      cancelled: { color: "#D32F2F", label: "Cancelled" },
-    };
-
-    // Map "pending" to "order"
-    // console.log("item.status :",item.status)
     const mappedStatus =
       item.status && item.status.toLowerCase() === "pending"
         ? "order"
@@ -85,12 +129,27 @@ const OrderScreen = () => {
         ? item.status.toLowerCase()
         : "order";
 
-    const config = statusConfig[mappedStatus] || {
-      color: "#000",
-      label: "Unknown",
-    };
-    const { color, label } = config;
     const currentStepIndex = orderSteps.indexOf(mappedStatus);
+
+    // Show modal only for this order if its id equals visibleOrderId
+    const isModalVisible = visibleOrderId === item.id;
+
+    // Function to show the status update modal for this order
+    const handleStatusUpdate = () => {
+      setVisibleOrderId(item.id);
+    };
+
+    // Function to handle status selection and update the order
+    const handleStatusSelection = async (newStatus) => {
+      try {
+        // Call the updateOrder mutation
+        await updateOrder({ orderId: item.id, status: newStatus }).unwrap();
+        // Optionally, you may want to refetch orders or update local state here
+        setVisibleOrderId(null);
+      } catch (err) {
+        console.error("Failed to update order status:", err);
+      }
+    };
 
     return (
       <>
@@ -110,59 +169,115 @@ const OrderScreen = () => {
               style={styles.vector2}
             />
 
-            <Image source={{ uri: item.image }} style={styles.orderImage} />
-            <View style={styles.orderDetails}>
-              <View style={styles.orderHeader}>
-                <Text style={styles.orderTitle}>{item.title}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: color }]}>
-                  <Text style={styles.statusText}>{label}</Text>
-                </View>
-              </View>
-              <Text style={styles.orderSubtitle}>{item.subtitle}</Text>
-              <View style={styles.orderFooter}>
-                <Text style={styles.orderPrice}>₹{item.price}</Text>
-                <Text style={styles.orderId}>
-                  #{item.id ? item.id.toString().slice(-6) : "N/A"}
-                </Text>
-              </View>
-              <View style={styles.totalsContainer}>
-                <Text style={styles.totalText}>
-                  Total Amount: ₹{item.totalAmount}
-                </Text>
-                <Text style={styles.totalText}>
-                  Total Items: {item.totalItems}
-                </Text>
-              </View>
+            {!isModalVisible ? (
+              //#region Order Card
+              <>
+                <Image source={{ uri: item.image }} style={styles.orderImage} />
+                <View style={styles.orderDetails}>
+                  <View style={styles.orderHeader}>
+                    <Text style={styles.orderTitle}>{item.title}</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusBadgeColor(item.status) },
+                      ]}
+                      onPress={handleStatusUpdate}
+                    >
+                      <Text style={styles.statusText}>{item.status}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.orderSubtitle}>{item.subtitle}</Text>
+                  <View style={styles.orderFooter}>
+                    <Text style={styles.orderPrice}>₹{item.price}</Text>
+                    <Text style={styles.orderId}>
+                      #{item.id ? item.id.toString().slice(-6) : "N/A"}
+                    </Text>
+                  </View>
+                  <View style={styles.totalsContainer}>
+                    <Text style={styles.totalText}>
+                      Total Amount: ₹{item.totalAmount}
+                    </Text>
+                    <Text style={styles.totalText}>
+                      Total Items: {item.totalItems}
+                    </Text>
+                  </View>
 
-              {item.status !== "cancelled" && (
-                <View style={styles.progressContainer}>
-                  {orderSteps.map((step, idx) => (
-                    <View key={step} style={styles.stepContainer}>
-                      <View
-                        style={[
-                          styles.stepIcon,
-                          idx <= currentStepIndex && {
-                            backgroundColor: "#0D986A",
-                          },
-                        ]}
-                      >
-                        <Text style={styles.stepText}>
-                          {idx <= currentStepIndex ? "✓" : idx + 1}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.stepLabel,
-                          idx <= currentStepIndex && { color: "#0D986A" },
-                        ]}
-                      >
-                        {step}
-                      </Text>
+                  {item.status !== "cancelled" && (
+                    <View style={styles.progressContainer}>
+                      {orderSteps.map((step, idx) => (
+                        <View key={step} style={styles.stepContainer}>
+                          <View
+                            style={[
+                              styles.stepIcon,
+                              idx <= currentStepIndex && {
+                                backgroundColor: "#0D986A",
+                              },
+                            ]}
+                          >
+                            <Text style={styles.stepText}>
+                              {idx <= currentStepIndex ? "✓" : idx + 1}
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              styles.stepLabel,
+                              idx <= currentStepIndex && { color: "#0D986A" },
+                            ]}
+                          >
+                            {step}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
+                  )}
                 </View>
-              )}
-            </View>
+              </>
+            ) : (
+              //#region Status modal
+              <View style={styles.modalContainer}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Order Status</Text>
+                  <Entypo
+                    name="cross"
+                    size={30}
+                    onPress={() => {
+                      setVisibleOrderId(null);
+                    }}
+                  />
+                </View>
+                <View style={styles.modalOptions}>
+                  <TouchableOpacity
+                    style={styles.modalOption}
+                    onPress={() => handleStatusSelection("shipped")}
+                  >
+                    <MaterialIcons
+                      name="local-shipping"
+                      size={40}
+                      color={"#3a9cf2"}
+                    />
+                    <Text style={styles.modalOptionText}>Shipped</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalOption}
+                    onPress={() => handleStatusSelection("delivered")}
+                  >
+                    <FontAwesome
+                      name="check-circle"
+                      size={35}
+                      color={"#3af27d"}
+                    />
+                    <Text style={styles.modalOptionText}>Delivered</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalOption}
+                    onPress={() => handleStatusSelection("cancelled")}
+                  >
+                    <MaterialIcons name="cancel" size={40} color={"#f23a3a"} />
+                    <Text style={styles.modalOptionText}>Cancelled</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
           <ShippingAddressTable shippingAddress={item?.shippingAddress} />
         </View>
@@ -171,7 +286,12 @@ const OrderScreen = () => {
   };
   //#region filter
   const CustomFilter = () => {
-    const handleClearFilter = () => {};
+    const handleClearFilter = () => {
+      setSelectedOption("");
+      setPage(1);
+      setHasMore(true);
+      setIsFetching(true); // Force loading state
+    };
     return (
       <View
         style={{
@@ -180,7 +300,7 @@ const OrderScreen = () => {
           marginBottom: 5,
         }}
       >
-        <View style={{width:50}}>
+        <View style={{ width: 50 }}>
           <TouchableOpacity onPress={handleClearFilter}>
             <Image
               source={require("@/assets/images/filterIcon.png")}
@@ -217,8 +337,7 @@ const OrderScreen = () => {
     );
   };
 
-  //#region Shipping Address
-
+  //#region Address table
   const ShippingAddressTable = ({ shippingAddress }) => {
     // If shippingAddress is null or undefined, display a message.
     if (!shippingAddress) {
@@ -239,7 +358,7 @@ const OrderScreen = () => {
       { label: "State", key: "state" },
       { label: "Zip Code", key: "zipCode" },
     ];
-    console.log("Address", shippingAddress);
+    // console.log("Address", shippingAddress);
 
     return (
       <View style={styles.container2}>
@@ -268,71 +387,84 @@ const OrderScreen = () => {
       </View>
     );
   };
-  //#region main
+
+  //#region main return
   return (
     <View style={styles.container}>
-      {/* <CustomHeader /> */}
       <CustomHeader color="#56D1A7" />
-
-      <View style={styles.contentContainer}>
-        {isOrderLoading ? (
-          <View style={{ marginTop: "90%", alignItems: "center" }}>
-            <ActivityIndicator size={"large"} color={"black"} />
-            <Text
+      {ordersData.length > 0 ? (
+        <View style={styles.contentContainer}>
+          {isOrderLoading && page === 1 ? (
+            <View
               style={{
-                fontSize: 18,
-                marginTop: 5,
-                fontWeight: 600,
-                color: "#002140",
-                marginLeft: 15,
+                justifyContent: "center",
+                alignItems: "center",
+                marginTop: "70%",
               }}
             >
-              Loading...
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={orders}
-            keyExtractor={(item) =>
-              item.id ? item.id.toString() : Math.random().toString()
-            }
-            renderItem={renderOrderItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.ordersList}
-            ListEmptyComponent={
-              <View
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  alignItems: "center",
-                  top: -10,
-                }}
-              >
-                <LottieView
-                  source={EmptyCart}
-                  autoPlay
-                  loop
-                  style={styles.lottie}
-                />
-                <Text
-                  style={{
-                    fontSize: 20,
-                    textAlign: "center",
-                    marginTop: -50,
-                    fontWeight: 600,
-                    color: "#002140",
-                  }}
-                >
-                  No problem
-                  {/* {"\n"} Start shopping{" "}
-                  <Text style={{ color: "#0D986A" }}>Now!</Text> */}
-                </Text>
-              </View>
-            }
-            ListHeaderComponent={<CustomFilter />}
-          />
-        )}
-      </View>
+              <ActivityIndicator size="large" color="#56D1A7" />
+              <Text style={{ fontSize: 18, fontWeight: 600, color: "#002140" }}>
+                Loading...
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={ordersData}
+              keyExtractor={(item) =>
+                item.id ? item.id.toString() : Math.random().toString()
+              }
+              renderItem={({ item, index }) =>
+                renderOrderItem({
+                  item,
+                  index,
+                  visibleOrderId,
+                  setVisibleOrderId,
+                })
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.ordersList}
+              onMomentumScrollBegin={() => {
+                onEndReachedCalledDuringMomentum.current = false;
+              }}
+              onEndReached={() => {
+                if (!onEndReachedCalledDuringMomentum.current) {
+                  loadMoreOrders();
+                  onEndReachedCalledDuringMomentum.current = true;
+                }
+              }}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={() => {
+                if (isFetching) {
+                  return (
+                    <View style={styles.footer}>
+                      <ActivityIndicator
+                        size="small"
+                        color="#000"
+                        style={{ marginTop: 10 }}
+                      />
+                      <Text style={{ alignSelf: "center" }}>
+                        loading more...
+                      </Text>
+                    </View>
+                  );
+                }
+                if (!hasMore && ordersData.length > 0) {
+                  return (
+                    <Text style={{ textAlign: "center" }}>No more orders</Text>
+                  );
+                }
+                return null;
+              }}
+              ListHeaderComponent={<CustomFilter />}
+            />
+          )}
+        </View>
+      ) : (
+        <View>
+          <LottieView source={EmptyCart} autoPlay loop style={styles.lottie} />
+          <Text style={{alignSelf:"center" ,fontSize:18 , marginTop:-60}}>No orders Yet</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -380,6 +512,47 @@ const styles = StyleSheet.create({
     elevation: 2,
     overflow: "hidden",
   },
+  modalContainer: {
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#002140",
+  },
+  modalOptions: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-around",
+  },
+  modalOption: {
+    backgroundColor: "#f5f5f5",
+    padding: 10,
+    borderRadius: 12,
+    elevation: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 100,
+  },
+  modalOptionText: {
+    marginTop: 5,
+    fontSize: 15,
+    fontWeight: "500",
+    textAlign: "center",
+  },
   vector: {
     position: "absolute",
     height: 200,
@@ -422,6 +595,7 @@ const styles = StyleSheet.create({
   orderImage: {
     width: 80,
     height: 80,
+    marginTop: 20,
     borderRadius: 12,
     marginRight: 16,
   },
@@ -435,7 +609,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   orderTitle: {
-    fontSize: 23,
+    fontSize: 26,
     fontFamily: "Philosopher_700Bold",
     color: "#002140",
     flexShrink: 1,
@@ -444,10 +618,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
+    backgroundColor: "yellow",
   },
   statusText: {
-    color: "white",
-    fontSize: 15,
+    color: "#002140",
+    letterSpacing: 0.5,
+    fontSize: 16,
     fontWeight: "500",
   },
   orderSubtitle: {
@@ -522,7 +698,7 @@ const styles = StyleSheet.create({
   },
   container2: {
     padding: 15,
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F5F5",
     borderRadius: 8,
     marginVertical: 10,
     elevation: 2, // Android shadow
@@ -554,7 +730,7 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     padding: 8,
-    fontSize: 14,
+    fontSize: 16,
     color: "#333",
   },
   tableHeaderCell: {

@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Image,
   ScrollView,
@@ -20,6 +21,10 @@ import { useSelector } from "react-redux";
 import CustomLoader from "../components/CustomLoader";
 import ProductCard from "../components/CustomProductList";
 import { colors } from "../../constant";
+import LottieView from "lottie-react-native";
+import EmptyCart from "../../assets/animation/EmptyCart.json";
+const { width, height } = Dimensions.get("window");
+
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -59,41 +64,41 @@ const HomeScreen = () => {
     category: selectedOption,
   });
 
-    // Reset pagination and products when filter or search changes
+  // Reset pagination and products when filter or search changes
   // In your useEffect for filter changes
-useEffect(() => {
-  // Cancel pending requests if filter changes
-  const abortController = new AbortController();
-  
-  setPage(1);
-  setProducts([]);
-  setHasMore(true);
-  
-  return () => abortController.abort();
-}, [search, selectedOption]);
+  useEffect(() => {
+    // Cancel pending requests if filter changes
+    const abortController = new AbortController();
 
-const handleClearFilter = () => {
-  setSearch("");
-  setSelectedOption("");
-  setPage(1);
-  setProducts([]);
-  setHasMore(true);
-  setIsFetching(true); // Force loading state
-};
+    setPage(1);
+    setProducts([]);
+    setHasMore(true);
 
-useEffect(() => {
-  if (data?.products) {
-    setProducts(prev => 
-      page === 1 ? data.products : [...prev, ...data.products]
-    );
-    setHasMore(page < data.totalPages);
-  }
-  setIsFetching(false);
-}, [data]);
+    return () => abortController.abort();
+  }, [search, selectedOption]);
+
+  const handleClearFilter = () => {
+    setSearch("");
+    setSelectedOption("");
+    setPage(1);
+    setProducts([]);
+    setHasMore(true);
+    setIsFetching(true); // Force loading state
+  };
+
+  useEffect(() => {
+    if (data?.products) {
+      setProducts((prev) =>
+        page === 1 ? data.products : [...prev, ...data.products]
+      );
+      setHasMore(page < data.totalPages);
+    }
+    setIsFetching(false);
+  }, [data]);
 
   console.log("Data :- ", data);
   console.log("Number's of products  :- ", data?.products?.length);
-  console.log("Page :- ",page)
+  console.log("Page :- ", page);
 
   const loadMoreProducts = () => {
     if (!isFetching && hasMore && !onEndReachedCalledDuringMomentum.current) {
@@ -103,11 +108,10 @@ useEffect(() => {
     }
   };
 
-
   const renderHeader = () => (
     <View>
       {/* <CustomBanner /> */}
-      <View style={{ flexDirection: "row", marginHorizontal: 10 }}>
+      <View style={{ flexDirection: "row" }}>
         <View style={styles.searchContainer}>
           <FontAwesome
             name="search"
@@ -161,50 +165,56 @@ useEffect(() => {
   return (
     <View style={styles.container}>
       {/* <CustomHeader /> */}
-      <CustomHeader color="#56D1A7"/>
-
-
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item._id.toString()}
-        renderItem={({ item, index }) => (
-          <ProductCard
-            id={item._id}
-            title={item.title}
-            subtitle={item.subtitle}
-            stock={item.stock}
-            image={item.thumbnail}
-            bgColor={colors[index % colors.length]}
-          />
-        )}
-        ListHeaderComponent={renderHeader}
-        onMomentumScrollBegin={() => {
-          onEndReachedCalledDuringMomentum.current = false;
-        }}
-        onEndReached={loadMoreProducts}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={() => {
-          if (isFetching) {
-            return (
-              <View style={styles.footer}>
-                <ActivityIndicator size="small" color="#000" />
-                <Text style={styles.footerText}>loading more...</Text>
-              </View>
-            );
-          }
-          if (!hasMore && products.length > 0) {
-            return <Text style={styles.noMoreText}>No more products</Text>;
-          }
-          return null;
-        }}
-        // ListEmptyComponent={() => (
-        //   <View style={styles.emptyContainer}>
-        //     <Text style={styles.emptyText}>No products found</Text>
-        //   </View>
-        // )}
-        showsVerticalScrollIndicator={false}
-      />
-
+      <CustomHeader color="#56D1A7" />
+      {products.length > 0 ? (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item._id.toString()}
+          renderItem={({ item, index }) => (
+            <ProductCard
+              id={item._id}
+              title={item.title}
+              subtitle={item.subtitle}
+              stock={item.stock}
+              image={item.thumbnail}
+              bgColor={colors[index % colors.length]}
+            />
+          )}
+          ListHeaderComponent={renderHeader}
+          onMomentumScrollBegin={() => {
+            onEndReachedCalledDuringMomentum.current = false;
+          }}
+          onEndReached={loadMoreProducts}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() => {
+            if (isFetching) {
+              return (
+                <View style={styles.footer}>
+                  <ActivityIndicator size="small" color="#000" />
+                  <Text style={styles.footerText}>loading more...</Text>
+                </View>
+              );
+            }
+            if (!hasMore && products.length > 0) {
+              return <Text style={styles.noMoreText}>No more products</Text>;
+            }
+            return null;
+          }}
+          // ListEmptyComponent={() => (
+          //   <View style={styles.emptyContainer}>
+          //     <Text style={styles.emptyText}>No products found</Text>
+          //   </View>
+          // )}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View>
+          <LottieView source={EmptyCart} autoPlay loop style={styles.lottie} />
+          <Text style={{ alignSelf: "center", fontSize: 18, marginTop: -60 }}>
+            No Products Yet
+          </Text>
+        </View>
+      )}
       <TouchableOpacity
         onPress={() => navigation.navigate("ProductOperation", { work: "add" })}
         style={styles.addButton}
@@ -219,6 +229,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
+  },  lottie: {
+    alignSelf: "center",
+    width: width * 1,
+    height: height * 0.7,
   },
   searchContainer: {
     flexDirection: "row",
@@ -273,7 +287,7 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: "row",
     marginTop: 10,
-    marginHorizontal: 15,
+    marginHorizontal: 10,
   },
   filterButton: {
     paddingVertical: 8,

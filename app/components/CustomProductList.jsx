@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   container: {
-    marginTop: 20,
+    marginTop: 10,
     height: 200,
     marginHorizontal: 10,
     borderRadius: 16,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   title: {
-    fontSize: 35,
+    fontSize: 30,
     color: "#002140",
     fontFamily: "Philosopher_700Bold",
   },

@@ -3,8 +3,10 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   isAuthenticated: false,
   sellerId: null,
+  username: null,
+  email: null,
   token: null,
-  isApproved:null
+  isApproved: null,
 };
 
 const authSlice = createSlice({
@@ -12,16 +14,20 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { sellerId, token ,isApproved } = action.payload;
+      const { sellerId, token, isApproved, username, email } = action.payload;
       state.isAuthenticated = true;
       state.sellerId = sellerId;
-      state.isApproved= isApproved,
-      state.token = token;
+      (state.username = username),
+        (state.email = email),
+        (state.isApproved = isApproved),
+        (state.token = token);
     },
     logout: (state) => {
       state.isAuthenticated = false;
-      state.isApproved = null,
-      state.sellerId = null;
+      (state.email = null),
+        (state.username = null),
+        (state.isApproved = null),
+        (state.sellerId = null);
       state.token = null;
     },
   },
