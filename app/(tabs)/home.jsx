@@ -25,7 +25,6 @@ import LottieView from "lottie-react-native";
 import EmptyCart from "../../assets/animation/EmptyCart.json";
 const { width, height } = Dimensions.get("window");
 
-
 const HomeScreen = () => {
   const navigation = useNavigation();
   const sellerId = useSelector((state) => state.auth.sellerId);
@@ -166,7 +165,23 @@ const HomeScreen = () => {
     <View style={styles.container}>
       {/* <CustomHeader /> */}
       <CustomHeader color="#56D1A7" />
-      {products.length > 0 ? (
+     
+
+      {isLoading ? (
+        <View style={{ marginTop: "70%" }}>
+          <ActivityIndicator size="large" color="#56D1A7" />
+          <Text
+            style={{
+              alignSelf: "center",
+              fontSize: 18,
+              fontWeight: 600,
+              color: "#002140",
+            }}
+          >
+            Loading...
+          </Text>
+        </View>
+      ) : (
         <FlatList
           data={products}
           keyExtractor={(item) => item._id.toString()}
@@ -200,14 +215,10 @@ const HomeScreen = () => {
             }
             return null;
           }}
-          // ListEmptyComponent={() => (
-          //   <View style={styles.emptyContainer}>
-          //     <Text style={styles.emptyText}>No products found</Text>
-          //   </View>
-          // )}
           showsVerticalScrollIndicator={false}
         />
-      ) : (
+      )}
+       {data?.products?.length === 0 && (
         <View>
           <LottieView source={EmptyCart} autoPlay loop style={styles.lottie} />
           <Text style={{ alignSelf: "center", fontSize: 18, marginTop: -60 }}>
@@ -215,6 +226,7 @@ const HomeScreen = () => {
           </Text>
         </View>
       )}
+
       <TouchableOpacity
         onPress={() => navigation.navigate("ProductOperation", { work: "add" })}
         style={styles.addButton}
@@ -229,7 +241,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
-  },  lottie: {
+  },
+  lottie: {
     alignSelf: "center",
     width: width * 1,
     height: height * 0.7,

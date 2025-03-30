@@ -1,10 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { SERVER } from "../../constant";
+import { NGROK_SERVER, SERVER } from "../../constant";
 
 export const productApi = createApi({
   reducerPath: "productApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${SERVER}/api/v1/product`,
+    baseUrl: `${NGROK_SERVER}/product`,
+    prepareHeaders: (headers) => {
+      headers.set("ngrok-skip-browser-warning", "true");
+      return headers;
+    },
   }),
   tagTypes: ["Product"],
   endpoints: (builder) => ({

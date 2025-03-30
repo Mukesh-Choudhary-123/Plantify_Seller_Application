@@ -1,29 +1,34 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import {SERVER} from '../../constant'
+import {NGROK_SERVER} from '../../constant'
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${SERVER}/api/v1/seller/`,
+    baseUrl: `${NGROK_SERVER}/seller`,
+    prepareHeaders: (headers) => {
+      headers.set("ngrok-skip-browser-warning", "true");
+      return headers;
+    },
   }),
+
   endpoints: (builder) => ({
     login: builder.mutation({
       query: ({email , password}) => ({
-        url: "login",
+        url: "/login",
         method: "POST",
         body: {email , password},
       }),
     }),
     signup: builder.mutation({
       query: (credential) => ({
-        url: "signup",
+        url: "/signup",
         method: "POST",
         body:credential
       })
     }),
     logout: builder.mutation({
       query: (credential) => ({
-        url: "logout",
+        url: "/logout",
         method: "POST",
         body:credential
       })

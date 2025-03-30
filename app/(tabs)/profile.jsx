@@ -5,6 +5,7 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import React from "react";
 import CustomHeader from "../components/CustomHeader";
@@ -13,7 +14,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigation } from "expo-router";
 import { useLogoutMutation } from "../../redux/api/authApi";
 import { logout } from "../../redux/slices/authSlice";
-
+import LottieView from "lottie-react-native";
+import ContactUs from "../../assets/animation/ContactUs.json";
+import { Ionicons } from "@expo/vector-icons";
+const { width, height } = Dimensions.get("window");
 
 const ProfileScreen = () => {
   let [fontsLoaded] = useFonts({
@@ -26,12 +30,12 @@ const ProfileScreen = () => {
     username: "Plantify Selle",
     email: "seller@gmail.com",
   };
-const username = useSelector((state) => state.auth.username);
-const email = useSelector((state) => state.auth.email);
-  
+  const username = useSelector((state) => state.auth.username);
+  const email = useSelector((state) => state.auth.email);
 
   const handleLogout = async () => {
     try {
+      console.log("logout pressed")
       await triggerLogout().unwrap();
       dispatch(logout());
       navigation.reset({ index: 0, routes: [{ name: "auth" }] });
@@ -46,16 +50,52 @@ const email = useSelector((state) => state.auth.email);
         <View style={styles.profileContent}>
           <View style={styles.userDetails}>
             <View>
-            <Text style={styles.username}>{username || userData.username}</Text>
-            <Text style={styles.email}>{email || userData.email}</Text>
+              <Text style={styles.username}>
+                {username || userData.username}
+              </Text>
+              <Text style={styles.email}>{email || userData.email}</Text>
             </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
               <Text style={styles.editText}>Logout</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
-      
+      <View style={{ marginTop:-90 ,zIndex:0}}>
+        <LottieView source={ContactUs} autoPlay loop style={styles.lottie} />
+      </View>
+      <View style={{ position: "absolute", width: "100%", top: "68%" }}>
+        <Text
+          style={{
+            fontSize: 30,
+            fontWeight: 900,
+            color: "grey",
+            textDecorationLine: "underline",
+            alignSelf: "center",
+          }}
+        >
+          Contact Us
+        </Text>
+        <View style={{marginLeft:"20%"}}>
+          <View style={{ flexDirection: "row", marginTop: 10 }}>
+            <Ionicons name="call" size={30} color="#56D1A7" />
+            <Text style={{ fontSize: 20, fontWeight: 600, color: "grey" }}>
+              {" "}
+              +91 6376092882
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", marginTop: 10 }}>
+            <Ionicons name="mail" size={30} color="#56D1A7" />
+            <Text style={{ fontSize: 20, fontWeight: 600, color: "grey" }}>
+              {" "}
+              support63@gmail.com
+            </Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 };
@@ -65,9 +105,10 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#fff",
   },
   profileHeader: {
+    zIndex:50,
     backgroundColor: "#56D1A7",
     paddingBottom: 15,
     borderBottomLeftRadius: 40,
@@ -80,8 +121,8 @@ const styles = StyleSheet.create({
   },
 
   logoutButton: {
-    marginTop:5,
-    height:40,
+    marginTop: 5,
+    height: 40,
     paddingVertical: 8,
     paddingHorizontal: 16,
     backgroundColor: "#002140",
@@ -97,7 +138,7 @@ const styles = StyleSheet.create({
   userDetails: {
     // marginTop: 20,
     flexDirection: "row",
-    justifyContent:"space-around"
+    justifyContent: "space-around",
   },
   username: {
     fontSize: 24,
@@ -109,6 +150,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#002140",
   },
+  lottie: {
+    alignSelf: "center",
+    width: width * 1,
+    height: height * 0.7,
+  },
 });
-
-

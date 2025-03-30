@@ -392,7 +392,7 @@ const OrderScreen = () => {
   return (
     <View style={styles.container}>
       <CustomHeader color="#56D1A7" />
-      {ordersData.length > 0 ? (
+     
         <View style={styles.contentContainer}>
           {isOrderLoading && page === 1 ? (
             <View
@@ -459,7 +459,7 @@ const OrderScreen = () => {
             />
           )}
         </View>
-      ) : (
+        {fetchOrder?.orders?.length === 0 && (
         <View>
           <LottieView source={EmptyCart} autoPlay loop style={styles.lottie} />
           <Text style={{alignSelf:"center" ,fontSize:18 , marginTop:-60}}>No orders Yet</Text>
