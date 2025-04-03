@@ -78,6 +78,8 @@ const OrderScreen = () => {
 
   const orders = fetchOrder?.orders || [];
 
+  console.log("orders: ",orders)
+
   const [updateOrder, { isLoading, isError, error }] = useUpdateOrderMutation();
 
   // Reset orders if sellerId (or filter) changes
@@ -410,9 +412,10 @@ const OrderScreen = () => {
           ) : (
             <FlatList
               data={ordersData}
-              keyExtractor={(item) =>
-                item.id ? item.id.toString() : Math.random().toString()
+              keyExtractor={(item, index) =>
+                item.id ? item.id.toString() + index.toString() : Math.random().toString()
               }
+              
               renderItem={({ item, index }) =>
                 renderOrderItem({
                   item,
@@ -460,9 +463,9 @@ const OrderScreen = () => {
           )}
         </View>
         {fetchOrder?.orders?.length === 0 && (
-        <View>
+        <View >
           <LottieView source={EmptyCart} autoPlay loop style={styles.lottie} />
-          <Text style={{alignSelf:"center" ,fontSize:18 , marginTop:-60}}>No orders Yet</Text>
+          <Text style={{alignSelf:"center" ,fontSize:18 ,position:"absolute", marginTop:10}}>No orders Yet</Text>
         </View>
       )}
     </View>

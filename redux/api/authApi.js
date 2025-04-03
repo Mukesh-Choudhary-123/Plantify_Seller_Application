@@ -1,10 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import {NGROK_SERVER} from '../../constant'
+import {SERVER} from '../../constant'
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${NGROK_SERVER}/seller`,
+    baseUrl: `${SERVER}/seller`,
     prepareHeaders: (headers) => {
       headers.set("ngrok-skip-browser-warning", "true");
       return headers;

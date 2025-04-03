@@ -16,6 +16,7 @@ import { useLoginMutation } from "@/redux/api/authApi";
 import { setCredentials } from "../../redux/slices/authSlice";
 import { useDispatch } from "react-redux";
 import NotApproved from "../screens/NotApproved";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -40,22 +41,29 @@ const LoginScreen = () => {
       console.log("User:", userData);
       // Clear the fields on success
       console.log("isApproved:- ", userData?.isApproved);
-      // setEmail("");
-      // setPassword("");
+      setEmail("");
+      setPassword("");
       setErrorMsg("");
-      dispatch(
-        setCredentials({
-          sellerId: userData.sellerData.sellerId,
-          username: userData.sellerData.sellername,
-          email:userData.sellerData.email,
-          token: userData.token,
-          isApproved: userData.isApproved,
-        })
-      );
+      
+      // Create a credentials object
+      const credentials = {
+        sellerId: userData.sellerData.sellerId,
+        username: userData.sellerData.sellername,
+        email: userData.sellerData.email,
+        token: userData.token,
+        isApproved: userData.isApproved,
+      };
+
+      // Dispatch credentials to redux state
+      dispatch(setCredentials(credentials));
+      
+      // Save credentials to AsyncStorage
+      await AsyncStorage.setItem("credentials", JSON.stringify(credentials));
+
       if (userData?.isApproved) {
         navigation.reset({ index: 0, routes: [{ name: "tabs" }] });
       } else {
-        navigation.navigate(NotApproved);
+        navigation.navigate("NotApproved");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -91,7 +99,6 @@ const LoginScreen = () => {
         placeholder="Enter email"
         value={email}
         onChangeText={setEmail}
-        // error={errorMsg}
       />
       <CustomPasswordInput value={password} onChangeText={setPassword} />
       <CustomButton
