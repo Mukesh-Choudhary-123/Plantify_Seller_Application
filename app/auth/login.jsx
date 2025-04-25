@@ -104,6 +104,7 @@ const LoginScreen = () => {
       <CustomButton
         onPress={handleSubmit}
         style={styles.button}
+        disabled={isLoading? true :false}
         text={isLoading ? "Logging in..." : "Log In"}
       />
       {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}

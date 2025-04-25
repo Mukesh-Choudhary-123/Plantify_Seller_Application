@@ -17,6 +17,7 @@ import ProductOperation from "./screens/ProductOperation";
 import NotApproved from "./screens/NotApproved";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setCredentials } from "../redux/slices/authSlice";
+import NetworkChecker from "../utils/NetworkChecker";
 
 AppRegistry.registerComponent(appName, () => App);
 
@@ -81,9 +82,11 @@ const RootLayout = () => {
 
 const AppRoot = () => {
   return (
-    <Provider store={store}>
-      <RootLayout />
-    </Provider>
+    <NetworkChecker>
+      <Provider store={store}>
+        <RootLayout />
+      </Provider>
+    </NetworkChecker>
   );
 };
 

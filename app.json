@@ -4,20 +4,20 @@
     "slug": "Plantify",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/adaptive-icon.png",
+    "icon": "./assets/images/Plantify.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mukesh63.Plantify"
+      "bundleIdentifier": "com.mukesh63.plantifyseller"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/Plantify.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.mukesh63.Plantify"
+      "package": "com.mukesh63.plantifyseller"
     },
     "web": {
       "bundler": "metro",

@@ -26,6 +26,8 @@ const styles = StyleSheet.create({
   container: {
     height: 60,
     paddingHorizontal: 10,
+    display: "flex",
+    flexDirection:"row"
     // borderTopLeftRadius: 40,
     // borderTopRightRadius:40
   },
